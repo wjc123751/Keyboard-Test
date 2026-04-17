@@ -7,9 +7,7 @@
             "command": "C:\\Qt\\Tools\\CMake_64\\bin\\cmake.exe",
             "args": [
                 "--build",
-                "${workspaceFolder}/build",
-                "--config",
-                "Debug"
+                "${workspaceFolder}/build"
             ],
             "group": {
                 "kind": "build",
