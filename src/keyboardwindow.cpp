@@ -2,14 +2,21 @@
 #include <windows.h>
 #include <QGridLayout>
 #include <QVBoxLayout>
+#include <QLabel>
 
 KeyboardWindow::KeyboardWindow(QWidget *parent) : QWidget(parent)   // 构造函数
 {
     setWindowTitle("键盘检测工具");
-    setFixedSize(1000, 320); // 窗口大小适配布局
+    setFixedSize(1050, 400); // 窗口大小适配布局
     setStyleSheet("background-color: #333333;"); // 背景深灰
 
-    createKeyboard();   // 创建键盘界面
+    QVBoxLayout *totalLayout = new QVBoxLayout(this);
+    totalLayout->setSpacing(10);
+    totalLayout->setContentsMargins(10, 10, 10, 10);
+
+    createKeyboard();       // 创建键盘界面
+
+    createStatusBar();      // 创建状态栏界面
 
     QTimer *timer = new QTimer(this);
     connect(timer, &QTimer::timeout, this, &KeyboardWindow::checkKeyPress);
@@ -19,7 +26,8 @@ KeyboardWindow::KeyboardWindow(QWidget *parent) : QWidget(parent)   // 构造函
 void KeyboardWindow::createKeyboard()
 {
     // 主布局：整体用水平布局，左边主键盘 + 右边功能区 + 数字区
-    QHBoxLayout *mainLayout = new QHBoxLayout(this);
+    QWidget *keyWidget = new QWidget;
+    QHBoxLayout *mainLayout = new QHBoxLayout(keyWidget);
     mainLayout->setSpacing(10);
     mainLayout->setContentsMargins(10,10,10,10);
 
@@ -207,6 +215,94 @@ void KeyboardWindow::createKeyboard()
     mainLayout->addWidget(leftWidget);
     mainLayout->addWidget(funcWidget);
     mainLayout->addWidget(numWidget);
+
+    // 最后把键盘加入总布局
+    this->layout()->addWidget(keyWidget);
+}
+
+void KeyboardWindow::createStatusBar()
+{
+    // 状态栏整体容器
+    QWidget *statusWidget = new QWidget;
+    statusWidget->setStyleSheet("background-color: #eeeeee;");
+    QHBoxLayout *statusLayout = new QHBoxLayout(statusWidget);
+    statusLayout->setContentsMargins(25, 15, 25, 15);
+    statusLayout->setSpacing(40);
+
+    // ========== 左侧：VK、扫描码 垂直排列 ==========
+    QWidget *leftContainer = new QWidget;
+    QVBoxLayout *leftVLayout = new QVBoxLayout(leftContainer);
+    leftVLayout->setSpacing(12);
+    leftVLayout->setContentsMargins(0,0,0,0);
+
+    // VK 标签 + 显示
+    QLabel *vkTextLabel = new QLabel("VK Code:");
+    vkLabel = new QLineEdit("00h (0)");
+    vkLabel->setReadOnly(true);
+    vkLabel->setFixedWidth(120);
+    // 水平组合 VK 行
+    QHBoxLayout *vkRow = new QHBoxLayout();
+    vkRow->addWidget(vkTextLabel);
+    vkRow->addWidget(vkLabel);
+    vkRow->addStretch();
+
+    // Scan 标签 + 显示
+    QLabel *scanTextLabel = new QLabel("Scan Code:");
+    scanLabel = new QLineEdit("00h (0)");
+    scanLabel->setReadOnly(true);
+    scanLabel->setFixedWidth(120);
+    // 水平组合 Scan 行
+    QHBoxLayout *scanRow = new QHBoxLayout();
+    scanRow->addWidget(scanTextLabel);
+    scanRow->addWidget(scanLabel);
+    scanRow->addStretch();
+
+    // 两行垂直叠放
+    leftVLayout->addLayout(vkRow);
+    leftVLayout->addLayout(scanRow);
+
+    // ========== 右侧：Reset、About 按钮 ==========
+    QWidget *rightContainer = new QWidget;
+    QHBoxLayout *rightHLayout = new QHBoxLayout(rightContainer);
+    rightHLayout->setSpacing(15);
+    rightHLayout->setContentsMargins(0,0,0,0);
+
+    QPushButton *resetBtn = new QPushButton("Reset");
+    QPushButton *aboutBtn = new QPushButton("About");
+    resetBtn->setFixedSize(80, 30);
+    aboutBtn->setFixedSize(80, 30);
+
+    // 按钮样式
+    QString btnStyle = R"(
+        QPushButton {
+            background-color: #cccccc;
+            border: none;
+            border-radius: 4px;
+            padding: 8px 20px;
+            font-size: 14px;
+        }
+        QPushButton:pressed {
+            background-color: #aaaaaa;
+        }
+    )";
+    resetBtn->setStyleSheet(btnStyle);
+    aboutBtn->setStyleSheet(btnStyle);
+
+    // 绑定重置按钮点击事件
+    connect(resetBtn, &QPushButton::clicked, this, &KeyboardWindow::onResetClicked);
+
+    rightHLayout->addWidget(resetBtn);
+    rightHLayout->addWidget(aboutBtn);
+
+
+    // ========== 组装整体状态栏 ==========
+    statusLayout->addWidget(leftContainer);
+    statusLayout->addStretch(); // 左右两端对齐
+    statusLayout->addWidget(rightContainer);
+
+
+    // 把状态栏加入窗口总布局
+    this->layout()->addWidget(statusWidget);
 }
 
 void KeyboardWindow::checkKeyPress()
@@ -233,6 +329,14 @@ void KeyboardWindow::checkKeyPress()
                 // 已满4次：永久保持绿色+黑字
                 btn->setStyleSheet("background-color: #00FF00; color: black;");
             }
+
+            // 更新显示格式：十六进制(十进制)
+            QString vkHex = QString("%1").arg(vk, 2, 16, QChar('0')).toUpper();
+            vkLabel->setText(QString("%1h (%2)").arg(vkHex).arg(vk));
+
+            UINT scanCode = MapVirtualKeyA(vk, 0);
+            QString scanHex = QString("%1").arg(scanCode, 2, 16, QChar('0')).toUpper();
+            scanLabel->setText(QString("%1h (%2)").arg(scanHex).arg(scanCode));
         }
         else {
             // 松开时重置状态
@@ -253,3 +357,16 @@ void KeyboardWindow::checkKeyPress()
     }
 }
 
+void KeyboardWindow::onResetClicked()
+{
+    // 清空按键状态
+    for(int vk : m_keyMap.keys())
+    {
+        m_pressCount[vk] = 0;
+        m_isLongLight[vk] = false;
+        m_keyMap[vk]->setStyleSheet("background-color:white; color:black;");
+    }
+    // 重置状态栏显示
+    vkLabel->setText("00h (0)");
+    scanLabel->setText("00h (0)");
+}
