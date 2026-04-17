@@ -1,3 +1,0 @@
-# Hashes of file build rules.
-9b7d846a9d57a97a33a7cbeb804e262e CMakeFiles/KeyboardTester_autogen
-4f771e5673d6e2892aa41a9480c41737 KeyboardTester_autogen/timestamp
