@@ -7,4 +7,6 @@ int main(int argc, char *argv[])
     KeyboardWindow w;               // 创建主窗口对象
     w.show();                       // 显示窗口
     return a.exec();                // 进入事件循环
+
+    
 }
