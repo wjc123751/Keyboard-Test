@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.16)
 
 project(KeyboardTester)
 
+set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -28,3 +30,8 @@ target_include_directories(KeyboardTester PRIVATE include)
 
 # 链接 Qt 库
 target_link_libraries(KeyboardTester PRIVATE Qt6::Core Qt6::Widgets)
+
+if(WIN32)
+    # MinGW去除黑控制台窗口，必须用 -mwindows
+    target_link_options(KeyboardTester PRIVATE -mwindows)
+endif()
