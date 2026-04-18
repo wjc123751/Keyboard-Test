@@ -11,7 +11,7 @@ compile_commands.json
 *.cmake
 
 # 编译二进制、中间文件
-*.exe
+# *.exe
 *.dll
 *.obj
 *.o
